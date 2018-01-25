@@ -33,6 +33,8 @@ public class IntentActivity extends Activity {
 	private ImageView image;
 	private String pathAndFile;
 
+	private Integer myInteger;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -70,6 +72,7 @@ public class IntentActivity extends Activity {
 		Intent myIntent = new Intent("com.google.zxing.client.android.SCAN");
 		myIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
 
+		//Check before you willy nilly launch something that may not be there
 		if (isAvailable(this, myIntent))
 			startActivityForResult(myIntent, ID_DO_EXPLICIT_BARCODE_ZXING);
 		else
