@@ -139,7 +139,7 @@ public class IntentActivity extends Activity {
 				photoFile = createImageFile();
 			} catch (IOException ex) {
 				// Error occurred while creating the File
-				Toast.makeText(this, "Horrible bus here, IOException occurred", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "Horrible biz here, IOException occurred", Toast.LENGTH_SHORT).show();
 				return;
 			}
 
