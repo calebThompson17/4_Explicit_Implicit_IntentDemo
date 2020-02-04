@@ -129,6 +129,7 @@ public class IntentActivity extends Activity {
 		Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
 
+		//create a place to store the photo
 		File file = new File(Environment.getExternalStorageDirectory(), "implicit.jpg");
 		outputFileUri = Uri.fromFile(file);
 		intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
@@ -145,6 +146,7 @@ public class IntentActivity extends Activity {
 			}
 
 			// Continue only if the File was successfully created
+			//  see https://developer.android.com/reference/androidx/core/content/FileProvider
 			if (photoFile != null) {
 				Uri photoURI = FileProvider.getUriForFile(this,
 						"com.example.android.fileprovider",
