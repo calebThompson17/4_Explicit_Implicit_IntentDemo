@@ -50,6 +50,7 @@
         android:layout_height="match_parent"
         android:gravity="left"
         android:layout_weight="1"
+        android:scaleType="fitXY"
         android:src="@drawable/ic_launcher" />
 
 </LinearLayout>

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -42,6 +43,7 @@ public class IntentActivity extends Activity {
 		setContentView(R.layout.activity_camera);
 		image = (ImageView) findViewById(R.id.imageView1);
 	}
+
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -104,20 +106,36 @@ public class IntentActivity extends Activity {
 
 	//*****where photo is stored
 	String mCurrentPhotoPath;
-	private File createImageFile() throws IOException {
-		// Create an image file name
-		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-		String imageFileName = "JPEG_" + timeStamp + "_";
-		File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-		File image = File.createTempFile(
-				imageFileName,  /* prefix */
-				".jpg",         /* suffix */
-				storageDir      /* directory */
-		);
+	private File createImageFile() {
 
-		// Save a file: path for use with ACTION_VIEW intents
-		mCurrentPhotoPath = image.getAbsolutePath();
-		return image;
+		try {
+
+			// get external directories that the media scanner scans
+			File[] storageDir = getExternalMediaDirs();
+
+			//create a file
+			File imagefile = new File(storageDir[0], "img2.png");
+
+			//make sure directory is there, (it should be)
+			if (!storageDir[0].exists()) {
+				if (!storageDir[0].mkdirs()) {
+					Log.e(TAG, "Failed to create file in: " + storageDir[0]);
+					return null;
+				}
+			}
+
+			//make file where image will be stored
+			imagefile.createNewFile();
+
+			// Save a file: path for use with ACTION_VIEW intents
+			mCurrentPhotoPath = imagefile.getAbsolutePath();
+			return imagefile;
+
+		} catch (IOException ex) {
+			// Error occurred while creating the File
+			Toast.makeText(this, "Horrible biz here, IOException occurred", Toast.LENGTH_SHORT).show();
+			return null;
+		}
 	}
 	////////////////////////////////////////////////////
 	// note , camera image capture comes from the following
@@ -128,28 +146,15 @@ public class IntentActivity extends Activity {
 		// location so we can easily get it
 		Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-
-		//create a place to store the photo
-		File file = new File(Environment.getExternalStorageDirectory(), "implicit.jpg");
-		outputFileUri = Uri.fromFile(file);
-		intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
-
 		if (intent.resolveActivity(getPackageManager()) != null){
 			// Create the File where the photo should go
-			File photoFile = null;
-			try {
-				photoFile = createImageFile();
-			} catch (IOException ex) {
-				// Error occurred while creating the File
-				Toast.makeText(this, "Horrible biz here, IOException occurred", Toast.LENGTH_SHORT).show();
-				return;
-			}
+			File photoFile = createImageFile();
 
 			// Continue only if the File was successfully created
 			//  see https://developer.android.com/reference/androidx/core/content/FileProvider
 			if (photoFile != null) {
 				Uri photoURI = FileProvider.getUriForFile(this,
-						"com.example.android.fileprovider",
+						"com.example.intentdemo.fileprovider",
 						photoFile);
 				intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
 				startActivityForResult(intent, TAKE_PICTURE);
@@ -165,6 +170,10 @@ public class IntentActivity extends Activity {
         switch (requestCode) {
             case (TAKE_PICTURE):
                 takepicture(resultCode);
+
+                //tell scanner to pic up this image
+				scanSavedMediaFile(mCurrentPhotoPath);
+
                 break;
             case(ID_DO_EXPLICIT_BARCODE_ZXING):
 			case (ID_DO_IMPLICIT_BARCODE ):
@@ -228,11 +237,32 @@ public class IntentActivity extends Activity {
     private void takepicture(int resultCode) {
         if (resultCode == RESULT_OK) {
 			setPic();
-
-			//lets get rid of the image so we dont hog memory
-			File file = new File(mCurrentPhotoPath);
-			boolean deleted = file.delete();
         }
     }
+
+	/**
+	 * Notifies the OS to index the new image, so it shows up in Gallery.
+	 * see https://www.programcreek.com/java-api-examples/index.php?api=android.media.MediaScannerConnection
+	 */
+	public void scanSavedMediaFile( final String path) {
+		// silly array hack so closure can reference scannerConnection[0] before it's created
+		final MediaScannerConnection[] scannerConnection = new MediaScannerConnection[1];
+		try {
+			MediaScannerConnection.MediaScannerConnectionClient scannerClient = new MediaScannerConnection.MediaScannerConnectionClient() {
+				public void onMediaScannerConnected() {
+					scannerConnection[0].scanFile(path, null);
+				}
+
+				@Override
+				public void onScanCompleted(String path, Uri uri) {
+
+				}
+
+			};
+			scannerConnection[0] = new MediaScannerConnection(this, scannerClient);
+			scannerConnection[0].connect();
+		} catch (Exception ignored) {
+		}
+	}
 }
 
